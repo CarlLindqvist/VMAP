@@ -1,7 +1,6 @@
 package vmap
 
 import (
-	"bytes"
 	"encoding/xml"
 	"fmt"
 	"strconv"
@@ -133,36 +132,31 @@ type CreativeParameter struct {
 
 type Duration struct{ time.Duration }
 
-var formatStrings = [...]string{"h", "m", "s", "ms"}
-
 func (d *Duration) UnmarshalText(data []byte) error {
-	var sb bytes.Buffer
+	var parts [4]int
 	currentPart := 0
 
 	for i := 0; i < len(data); i++ {
 		b := data[i]
-		switch b {
-		case ':', '.':
-			if currentPart == 3 {
+		switch {
+		case b >= '0' && b <= '9':
+			parts[currentPart] = parts[currentPart]*10 + int(b-'0')
+		case b == ':' || b == '.':
+			currentPart++
+			if currentPart > 3 {
 				return fmt.Errorf("invalid duration format: %s", string(data))
 			}
-			sb.WriteString(formatStrings[currentPart])
-			currentPart++
-		case '1', '2', '3', '4', '5', '6', '7', '8', '9', '0':
-			sb.WriteByte(b)
 		}
 	}
-	sb.WriteString(formatStrings[currentPart])
 
 	if currentPart < 2 {
 		return fmt.Errorf("invalid duration format: %s", string(data))
 	}
 
-	dur, err := time.ParseDuration(sb.String())
-	if err != nil {
-		return fmt.Errorf("error parsing duration: %w", err)
-	}
-	*d = Duration{dur}
+	d.Duration = time.Duration(parts[0])*time.Hour +
+		time.Duration(parts[1])*time.Minute +
+		time.Duration(parts[2])*time.Second +
+		time.Duration(parts[3])*time.Millisecond
 	return nil
 }
 

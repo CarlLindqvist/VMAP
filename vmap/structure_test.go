@@ -311,6 +311,125 @@ func BenchmarkFasterDecode(b *testing.B) {
 	}
 }
 
+func BenchmarkScanDecode(b *testing.B) {
+	doc, err := os.ReadFile("sample-vmap/testVmap.xml")
+	if err != nil {
+		panic(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = DecodeVmapScan(doc)
+	}
+}
+
+func TestDecodeVmapScan(t *testing.T) {
+	is := is.New(t)
+	doc, err := os.ReadFile("sample-vmap/testVmap.xml")
+	is.NoErr(err)
+
+	vmap1, err := DecodeVmap(doc)
+	is.NoErr(err)
+	vmap2, err := DecodeVmapScan(doc)
+	is.NoErr(err)
+
+	is.Equal(vmap1.Version, vmap2.Version)
+	is.Equal(vmap1.Vmap, vmap2.Vmap)
+	is.Equal(vmap1.XMLName.Local, vmap2.XMLName.Local)
+	is.Equal(vmap1.XMLName.Space, vmap2.XMLName.Space)
+
+	is.Equal(len(vmap1.AdBreaks), len(vmap2.AdBreaks))
+	for i := range vmap1.AdBreaks {
+		a := vmap1.AdBreaks[i]
+		b := vmap2.AdBreaks[i]
+		is.Equal(a.Id, b.Id)
+		is.Equal(a.BreakType, b.BreakType)
+		is.Equal(a.TimeOffset, b.TimeOffset)
+		is.Equal(len(a.TrackingEvents), len(b.TrackingEvents))
+		for j := range a.TrackingEvents {
+			is.Equal(strings.TrimSpace(a.TrackingEvents[j].Text), strings.TrimSpace(b.TrackingEvents[j].Text))
+			is.Equal(a.TrackingEvents[j].Event, b.TrackingEvents[j].Event)
+		}
+
+		v1 := a.AdSource.VASTData.VAST
+		v2 := b.AdSource.VASTData.VAST
+		is.True(v1 != nil)
+		is.True(v2 != nil)
+		is.Equal(v1.Version, v2.Version)
+		is.Equal(len(v1.Ad), len(v2.Ad))
+		for j := range v1.Ad {
+			is.Equal(v1.Ad[j].Id, v2.Ad[j].Id)
+			is.Equal(v1.Ad[j].Sequence, v2.Ad[j].Sequence)
+			if v1.Ad[j].InLine != nil {
+				is.True(v2.Ad[j].InLine != nil)
+				is.Equal(strings.TrimSpace(v1.Ad[j].InLine.AdSystem), strings.TrimSpace(v2.Ad[j].InLine.AdSystem))
+				is.Equal(strings.TrimSpace(v1.Ad[j].InLine.AdTitle), strings.TrimSpace(v2.Ad[j].InLine.AdTitle))
+				is.Equal(v1.Ad[j].InLine.Error, v2.Ad[j].InLine.Error)
+				is.Equal(len(v1.Ad[j].InLine.Creatives), len(v2.Ad[j].InLine.Creatives))
+			}
+		}
+	}
+}
+
+func TestDecodeVastScan(t *testing.T) {
+	is := is.New(t)
+	doc, err := os.ReadFile("sample-vmap/testVast.xml")
+	is.NoErr(err)
+
+	vast1, err := DecodeVast(doc)
+	is.NoErr(err)
+	vast2, err := DecodeVastScan(doc)
+	is.NoErr(err)
+
+	is.Equal(vast1.Version, vast2.Version)
+	is.Equal(len(vast1.Ad), len(vast2.Ad))
+	for i := range vast1.Ad {
+		a := vast1.Ad[i]
+		b := vast2.Ad[i]
+		is.Equal(a.Id, b.Id)
+		is.Equal(a.Sequence, b.Sequence)
+		if a.InLine != nil {
+			is.True(b.InLine != nil)
+			is.Equal(strings.TrimSpace(a.InLine.AdSystem), strings.TrimSpace(b.InLine.AdSystem))
+			is.Equal(strings.TrimSpace(a.InLine.AdTitle), strings.TrimSpace(b.InLine.AdTitle))
+			is.Equal(a.InLine.Error, b.InLine.Error)
+			is.Equal(len(a.InLine.Impression), len(b.InLine.Impression))
+			is.Equal(len(a.InLine.Creatives), len(b.InLine.Creatives))
+			for j := range a.InLine.Creatives {
+				c1 := a.InLine.Creatives[j]
+				c2 := b.InLine.Creatives[j]
+				is.Equal(c1.Id, c2.Id)
+				is.Equal(c1.AdId, c2.AdId)
+				is.Equal(c1.Linear.Duration, c2.Linear.Duration)
+				is.Equal(len(c1.Linear.TrackingEvents), len(c2.Linear.TrackingEvents))
+				is.Equal(len(c1.Linear.MediaFiles), len(c2.Linear.MediaFiles))
+				for k := range c1.Linear.MediaFiles {
+					is.Equal(c1.Linear.MediaFiles[k].Width, c2.Linear.MediaFiles[k].Width)
+					is.Equal(c1.Linear.MediaFiles[k].Height, c2.Linear.MediaFiles[k].Height)
+					is.Equal(c1.Linear.MediaFiles[k].Bitrate, c2.Linear.MediaFiles[k].Bitrate)
+					is.Equal(c1.Linear.MediaFiles[k].MediaType, c2.Linear.MediaFiles[k].MediaType)
+					is.Equal(c1.Linear.MediaFiles[k].Codec, c2.Linear.MediaFiles[k].Codec)
+				}
+			}
+			is.Equal(len(a.InLine.Extensions), len(b.InLine.Extensions))
+		}
+	}
+}
+
+func TestSpecialCharactersScan(t *testing.T) {
+	is := is.New(t)
+	doc, err := os.ReadFile("sample-vmap/testVastSpecialChars.xml")
+	is.NoErr(err)
+
+	vastDecoded, err := DecodeVast(doc)
+	is.NoErr(err)
+	vastScanned, err := DecodeVastScan(doc)
+	is.NoErr(err)
+
+	is.Equal(vastDecoded.Ad[0].InLine.AdTitle, vastScanned.Ad[0].InLine.AdTitle)
+	is.Equal(vastScanned.Ad[0].InLine.AdTitle, "Hej&ö\n<>\"")
+}
+
 func TestSpecialCharacters(t *testing.T) {
 	is := is.New(t)
 	doc, err := os.ReadFile("sample-vmap/testVastSpecialChars.xml")
