@@ -444,6 +444,196 @@ func TestSpecialCharacters(t *testing.T) {
 	is.Equal(vastDecoded.Ad[0].InLine.AdTitle, "Hej&ö\n<>\"")
 }
 
+// --- Fast Marshal Tests ---
+
+func TestMarshalVmapFast(t *testing.T) {
+	is := is.New(t)
+	doc, err := os.ReadFile("sample-vmap/testVmap.xml")
+	is.NoErr(err)
+
+	var v VMAP
+	err = xml.Unmarshal(doc, &v)
+	is.NoErr(err)
+
+	expected, err := xml.Marshal(v)
+	is.NoErr(err)
+
+	got, err := MarshalVmap(&v)
+	is.NoErr(err)
+
+	is.Equal(string(expected), string(got))
+}
+
+func TestMarshalVmapEmptyFast(t *testing.T) {
+	is := is.New(t)
+	doc, err := os.ReadFile("sample-vmap/testVmap2.xml")
+	is.NoErr(err)
+
+	var v VMAP
+	err = xml.Unmarshal(doc, &v)
+	is.NoErr(err)
+
+	expected, err := xml.Marshal(v)
+	is.NoErr(err)
+
+	got, err := MarshalVmap(&v)
+	is.NoErr(err)
+
+	is.Equal(string(expected), string(got))
+}
+
+func TestMarshalVmapEmptyVastFast(t *testing.T) {
+	is := is.New(t)
+	doc, err := os.ReadFile("sample-vmap/testVmapEmptyVast.xml")
+	is.NoErr(err)
+
+	var v VMAP
+	err = xml.Unmarshal(doc, &v)
+	is.NoErr(err)
+
+	expected, err := xml.Marshal(v)
+	is.NoErr(err)
+
+	got, err := MarshalVmap(&v)
+	is.NoErr(err)
+
+	is.Equal(string(expected), string(got))
+}
+
+func TestMarshalVastFast(t *testing.T) {
+	is := is.New(t)
+	doc, err := os.ReadFile("sample-vmap/testVast.xml")
+	is.NoErr(err)
+
+	var v VAST
+	err = xml.Unmarshal(doc, &v)
+	is.NoErr(err)
+
+	expected, err := xml.Marshal(v)
+	is.NoErr(err)
+
+	got, err := MarshalVast(&v)
+	is.NoErr(err)
+
+	is.Equal(string(expected), string(got))
+}
+
+func TestMarshalVastEmptyFast(t *testing.T) {
+	is := is.New(t)
+	doc, err := os.ReadFile("sample-vmap/testVast3.xml")
+	is.NoErr(err)
+
+	var v VAST
+	err = xml.Unmarshal(doc, &v)
+	is.NoErr(err)
+
+	expected, err := xml.Marshal(v)
+	is.NoErr(err)
+
+	got, err := MarshalVast(&v)
+	is.NoErr(err)
+
+	is.Equal(string(expected), string(got))
+}
+
+func TestMarshalVast2Fast(t *testing.T) {
+	is := is.New(t)
+	doc, err := os.ReadFile("sample-vmap/testVast2.xml")
+	is.NoErr(err)
+
+	var v VAST
+	err = xml.Unmarshal(doc, &v)
+	is.NoErr(err)
+
+	expected, err := xml.Marshal(v)
+	is.NoErr(err)
+
+	got, err := MarshalVast(&v)
+	is.NoErr(err)
+
+	is.Equal(string(expected), string(got))
+}
+
+func TestMarshalSpecialCharsFast(t *testing.T) {
+	is := is.New(t)
+	doc, err := os.ReadFile("sample-vmap/testVastSpecialChars.xml")
+	is.NoErr(err)
+
+	var v VAST
+	err = xml.Unmarshal(doc, &v)
+	is.NoErr(err)
+
+	expected, err := xml.Marshal(v)
+	is.NoErr(err)
+
+	got, err := MarshalVast(&v)
+	is.NoErr(err)
+
+	is.Equal(string(expected), string(got))
+}
+
+// --- Fast Marshal Benchmarks ---
+
+func BenchmarkXMLMarshalVmap(b *testing.B) {
+	doc, err := os.ReadFile("sample-vmap/testVmap.xml")
+	if err != nil {
+		b.Fatal(err)
+	}
+	var v VMAP
+	if err := xml.Unmarshal(doc, &v); err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = xml.Marshal(v)
+	}
+}
+
+func BenchmarkFastMarshalVmap(b *testing.B) {
+	doc, err := os.ReadFile("sample-vmap/testVmap.xml")
+	if err != nil {
+		b.Fatal(err)
+	}
+	var v VMAP
+	if err := xml.Unmarshal(doc, &v); err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = MarshalVmap(&v)
+	}
+}
+
+func BenchmarkXMLMarshalVast(b *testing.B) {
+	doc, err := os.ReadFile("sample-vmap/testVast.xml")
+	if err != nil {
+		b.Fatal(err)
+	}
+	var v VAST
+	if err := xml.Unmarshal(doc, &v); err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = xml.Marshal(v)
+	}
+}
+
+func BenchmarkFastMarshalVast(b *testing.B) {
+	doc, err := os.ReadFile("sample-vmap/testVast.xml")
+	if err != nil {
+		b.Fatal(err)
+	}
+	var v VAST
+	if err := xml.Unmarshal(doc, &v); err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = MarshalVast(&v)
+	}
+}
+
 func TestDecodeCompliance(t *testing.T) {
 	wg := sync.WaitGroup{}
 	//Check for race conditions
