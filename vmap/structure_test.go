@@ -572,6 +572,65 @@ func TestMarshalSpecialCharsFast(t *testing.T) {
 	is.Equal(string(expected), string(got))
 }
 
+// --- MarshalAppend Tests ---
+
+func TestMarshalVmapAppend(t *testing.T) {
+	is := is.New(t)
+	doc, err := os.ReadFile("sample-vmap/testVmap.xml")
+	is.NoErr(err)
+
+	var v VMAP
+	err = xml.Unmarshal(doc, &v)
+	is.NoErr(err)
+
+	expected, err := MarshalVmap(&v)
+	is.NoErr(err)
+
+	buf := make([]byte, 0, 1024)
+	got, err := MarshalVmapAppend(buf, &v)
+	is.NoErr(err)
+
+	is.Equal(string(expected), string(got))
+}
+
+func TestMarshalVastAppend(t *testing.T) {
+	is := is.New(t)
+	doc, err := os.ReadFile("sample-vmap/testVast.xml")
+	is.NoErr(err)
+
+	var v VAST
+	err = xml.Unmarshal(doc, &v)
+	is.NoErr(err)
+
+	expected, err := MarshalVast(&v)
+	is.NoErr(err)
+
+	buf := make([]byte, 0, 1024)
+	got, err := MarshalVastAppend(buf, &v)
+	is.NoErr(err)
+
+	is.Equal(string(expected), string(got))
+}
+
+func TestMarshalVmapAppendPreservesPrefix(t *testing.T) {
+	is := is.New(t)
+	doc, err := os.ReadFile("sample-vmap/testVmap.xml")
+	is.NoErr(err)
+
+	var v VMAP
+	err = xml.Unmarshal(doc, &v)
+	is.NoErr(err)
+
+	prefix := []byte("PREFIX")
+	buf := make([]byte, len(prefix), 1024)
+	copy(buf, prefix)
+
+	got, err := MarshalVmapAppend(buf, &v)
+	is.NoErr(err)
+
+	is.Equal(string(got[:len(prefix)]), "PREFIX")
+}
+
 // --- Fast Marshal Benchmarks ---
 
 func BenchmarkXMLMarshalVmap(b *testing.B) {

@@ -6,16 +6,28 @@ import (
 
 // MarshalVmap marshals a VMAP to XML, producing output identical to encoding/xml.Marshal.
 func MarshalVmap(v *VMAP) ([]byte, error) {
-	buf := make([]byte, 0, 8192)
+	buf := make([]byte, 0, 256*1024)
 	buf = appendVMAP(buf, v)
 	return buf, nil
 }
 
+// MarshalVmapAppend appends the XML encoding of a VMAP to buf and returns the extended buffer.
+// This allows callers to manage buffer lifecycle (e.g. via sync.Pool) for reduced allocations.
+func MarshalVmapAppend(buf []byte, v *VMAP) ([]byte, error) {
+	return appendVMAP(buf, v), nil
+}
+
 // MarshalVast marshals a VAST to XML, producing output identical to encoding/xml.Marshal.
 func MarshalVast(v *VAST) ([]byte, error) {
-	buf := make([]byte, 0, 4096)
+	buf := make([]byte, 0, 128*1024)
 	buf = appendVAST(buf, v)
 	return buf, nil
+}
+
+// MarshalVastAppend appends the XML encoding of a VAST to buf and returns the extended buffer.
+// This allows callers to manage buffer lifecycle (e.g. via sync.Pool) for reduced allocations.
+func MarshalVastAppend(buf []byte, v *VAST) ([]byte, error) {
+	return appendVAST(buf, v), nil
 }
 
 // --- escape helpers ---
